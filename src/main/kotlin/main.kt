@@ -37,6 +37,144 @@ data class Post(
     val attachments: Map<String, Attachments>
 )
 
+data class Note(
+    val id: Int = 0,
+    val title: String = "",
+    val date: Int,
+    val text: String = "",
+    val commentsCount: Int?= null,
+    val comments: MutableList<Comment>,
+    val readComments: Int?= null,
+    val viewUrl: String?= null,
+    val privacyUrl: String?= null,
+    var canComment: Int?= null,
+    val textWiki: String?= null
+)
+
+class NoteService{
+    private val items: MutableList<Note> = mutableListOf<Note>()
+
+    fun add(elem: Note): Note {
+        items += elem
+        return items.last()
+    }
+
+    fun createComment(noteId: Int, comment: Comment): Comment {
+        var count: Int? = null
+        for ((index, note) in items.withIndex()) {
+            if (note.id == noteId) {
+                note.comments += comment
+                count = 1
+            }
+        }
+        count ?: throw PostNotFoundException("id not found")
+        return comment
+    }
+
+    fun delete(noteId: Int): Boolean {
+        var count: Int? = null
+        for ((index, note) in items.withIndex()) {
+            if (note.id == noteId) {
+                items.remove(note)
+                count = 1
+            }
+        }
+        count ?: throw PostNotFoundException("id not found")
+        return true
+    }
+
+    fun deleteComment(noteId: Int, commentId: Int): Boolean {
+        var count: Int? = null
+        for ((index, note) in items.withIndex()) {
+            if (note.id == noteId) {
+                for ((index, comment) in note.comments.withIndex()){
+                    if (comment.id == commentId){
+                        comment.delete = true
+                    }
+                }
+                count = 1
+            }
+        }
+        count ?: throw PostNotFoundException("id not found")
+        return true
+    }
+
+    fun edit(note: Note): Boolean {
+        for ((index, origNote) in items.withIndex()) {
+            if (origNote.id == note.id) {
+                items[index] = note.copy()
+                return true
+            }
+        }
+        return false
+    }
+
+    fun editComment(noteId: Int, comment: Comment): Boolean {
+        var count: Int? = null
+        for ((index, note) in items.withIndex()) {
+            if (note.id == noteId) {
+                for ((index, origComment) in note.comments.withIndex()){
+                    if (origComment.id == comment.id){
+                        note.comments[index] = comment
+                        return true
+                    }
+                }
+            }
+        }
+        return false
+    }
+
+    fun get(): MutableList<Note> {
+        return items
+    }
+
+    fun getByld(noteId: Int): Note {
+        for ((index, note) in items.withIndex()) {
+            if (note.id == noteId) {
+                return note
+            }
+        }
+        throw PostNotFoundException("id not found")
+    }
+
+    fun getComments(noteId: Int): MutableList<Comment> {
+        for ((index, note) in items.withIndex()) {
+            if (note.id == noteId) {
+                return note.comments
+            }
+        }
+        throw PostNotFoundException("id not found")
+    }
+
+    fun restoreComment(noteId: Int, commentId: Int): Boolean {
+        var count: Int? = null
+        for ((index, note) in items.withIndex()) {
+            if (note.id == noteId) {
+                for ((index, comment) in note.comments.withIndex()){
+                    if (comment.id == commentId){
+                        comment.delete = false
+                    }
+                }
+                count = 1
+            }
+        }
+        count ?: throw PostNotFoundException("id not found")
+        return true
+    }
+
+
+    fun printAll() {
+        for (note in items) {
+            println(note)
+            for (comment in note.comments) {
+                println(comment)
+            }
+        }
+
+    }
+
+
+}
 interface Attachments {
     val type: String
 }
@@ -45,7 +183,7 @@ class Photo(override val type: String = "photo") : Attachments
 class Video(override val type: String = "video") : Attachments
 class Audio(override val type: String = "audio") : Attachments
 class Doc(override val type: String = "doc") : Attachments
-class Note(override val type: String = "note") : Attachments
+
 
 class PostNotFoundException(message: String) : RuntimeException(message)
 
@@ -61,6 +199,7 @@ data class Comment(
     val text: String = "",
     val replyToUser: Int? = null,
     val replyToComment: Int? = null,
+    var delete : Boolean? = null,
     val attachments: Map<String, Attachments>
 )
 
