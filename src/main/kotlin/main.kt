@@ -53,9 +53,11 @@ data class Note(
 
 class NoteService{
     private val items: MutableList<Note> = mutableListOf<Note>()
+    private var noteId = 0
 
     fun add(elem: Note): Note {
-        items += elem
+        noteId++
+        items += elem.copy(id = noteId)
         return items.last()
     }
 
