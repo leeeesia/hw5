@@ -8,6 +8,16 @@ fun main() {
     val post4 = Post(id = 2, text = "new post 2", date = 56, likes = Likes(45, true), attachments = attachments)
     val comment1 = Comment(date = 34, text = "com 1", attachments = attachments)
     val comment2 = Comment(date = 34, text = "com 2", attachments = attachments)
+    val message1 = Message("msg 1", 1)
+    val message2 = Message("msg 2", 2)
+    val message3 = Message("msg 3", 3, unread = false)
+    ChatService.add(1,message1)
+    ChatService.add(1,message3)
+    ChatService.add(2,message2)
+    ChatService.printChats()
+    println(ChatService.getChatList())
+    println(ChatService.getMessageList(1,5))
+    println(ChatService.getUnreadChatsCount())
     WallService.add(post1)
     WallService.add(post2)
     WallService.add(post3)
@@ -51,6 +61,41 @@ data class Note(
     val textWiki: String?= null
 )
 
+data class Chat(val messages : MutableList<Message> = mutableListOf(), var delete: Boolean = false)
+
+object ChatService{
+    private val chats = mutableMapOf<Int,Chat>()
+
+    fun add(userId: Int, message: Message)  {
+        chats.getOrPut(userId) { Chat() }.messages.add(message)
+    }
+
+    fun getChatList() : List<String> =
+       chats.values.map { it.messages.lastOrNull {message -> !message.delete }?.text ?: "Not message" }
+
+
+    fun getMessageList(userId: Int, count: Int) : List<Message> {
+        val chat = chats[userId] ?: throw NoSuchChatException()
+        return chat.messages.filter { !it.delete }.takeLast(count)
+    }
+
+    fun deleteChat(userId: Int){
+        chats[userId]?.delete  = true ?: throw NoSuchChatException()
+    }
+
+    fun deleteMessage(userId: Int, messageId : Int, text: String){
+        chats[userId]?.messages?.get(messageId)?.text = text ?:  throw NoSuchChatException()
+    }
+
+    fun getUnreadChatsCount() : List<String>{
+       return chats.values.map { it.messages.lastOrNull {message -> message.unread }?.text ?: "Not message" }
+    }
+
+    fun printChats() = println(chats)
+
+}
+
+class Message(var text:String, val id: Int, var delete: Boolean = false, var unread: Boolean = true)
 class NoteService{
     private val items: MutableList<Note> = mutableListOf<Note>()
     private var noteId = 0
@@ -186,7 +231,7 @@ class Video(override val type: String = "video") : Attachments
 class Audio(override val type: String = "audio") : Attachments
 class Doc(override val type: String = "doc") : Attachments
 
-
+class NoSuchChatException : Exception()
 class PostNotFoundException(message: String) : RuntimeException(message)
 
 class Likes(
